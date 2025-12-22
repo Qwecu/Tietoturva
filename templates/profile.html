@@ -1,0 +1,13 @@
+<h2>Profile</h2>
+<p><strong>Username:</strong> {{ user.username }}</p>
+
+
+<form method="POST">
+<label>Secret:</label><br>
+<input name="secret" value="{{ user.secret }}">
+<button type="submit">Save</button>
+</form>
+
+
+<br>
+<a href="/logout">Logout</a>
