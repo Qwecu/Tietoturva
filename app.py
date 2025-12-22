@@ -39,12 +39,22 @@ def login():
         username = request.form["username"]
         password = hash_password(request.form["password"])
 
+#SQL Injection begins!
         conn = get_db()
+        vulnerablecode =  f"SELECT * FROM users WHERE username='{username}' AND password={password}"
         user = conn.execute(
-            "SELECT * FROM users WHERE username=? AND password=?",
-            (username, password)
+            vulnerablecode
         ).fetchone()
         conn.close()
+
+#SQL injection ends! Corrected code follows:
+
+        # conn = get_db()
+        # user = conn.execute(
+        #     "SELECT * FROM users WHERE username=? AND password=?",
+        #     (username, password)
+        # ).fetchone()
+        # conn.close()
 
         if user:
             session["user_id"] = user["id"]
@@ -108,4 +118,4 @@ def logout():
 
 if __name__ == "__main__":
     init_db()
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)
