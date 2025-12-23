@@ -39,11 +39,11 @@ def init_db():
     conn.close()
 
 #SAFE HASHING BEGINS
-#import os
-#ITERATIONS = 200_000
+# import os
+# ITERATIONS = 200_000
 
 # def hash_password(username, password_plaintext):
-#     
+    
 
 #     salt = salt_by_username(username)
 #     password_hash = hashlib.pbkdf2_hmac(
@@ -52,7 +52,7 @@ def init_db():
 #     salt,
 #     ITERATIONS
 #     )
-#     return password_hash
+#     return password_hash.hex()
 
 # def hash_password_generate_salted(password_plaintext) -> tuple[bytes, bytes]:
 #     salt = os.urandom(16)
@@ -64,10 +64,12 @@ def init_db():
 #         ITERATIONS
 #     )
 
-#     return password_hash, salt
+#     return password_hash.hex(), salt
 
 
 #SAFE HASHING ENDS
+
+#UNSAFE HASHING BEGINS
 
 def hash_password_generate_salted(password_plaintext) -> tuple[bytes, bytes]:
     return hashlib.sha256(password_plaintext.encode()).hexdigest(), b''
@@ -75,14 +77,18 @@ def hash_password_generate_salted(password_plaintext) -> tuple[bytes, bytes]:
 def hash_password(username, password_plaintext):
     return hashlib.sha256(password_plaintext.encode()).hexdigest()
 
+#UNSAFE HASHING ENDS
+
 def salt_by_username(username: str) -> bytes:
+    print("Salt req fir user" + username)
     conn = get_db()
     try:
         result = conn.execute(
             "SELECT salt FROM users WHERE username=?",
-            (username)
+            (username,)
         ).fetchone()
-        return result
+        print("Salt of today is " + result["salt"].hex())
+        return result["salt"]
     finally:
         conn.close()
 
@@ -108,7 +114,7 @@ def login():
 
         # conn = get_db()
         # user = conn.execute(
-        #     "SELECT * FROM users WHERE username=? AND hashed_password=?",
+        #     "SELECT * FROM users WHERE username=? AND password_hash=?",
         #     (username, hashed_password)
         # ).fetchone()
         # conn.close()
