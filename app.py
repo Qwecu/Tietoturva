@@ -1,3 +1,8 @@
+# import debugpy
+# debugpy.listen(5678)
+# print("Waiting for debugger attach...")
+#debugpy.wait_for_client()  # optional; remove for normal runs
+
 from flask import Flask, render_template, request, redirect, session, url_for
 import sqlite3
 import hashlib
@@ -15,33 +20,85 @@ def get_db():
 
 
 def init_db():
+    print("Initdb!")
     conn = get_db()
     cur = conn.cursor()
+    cur.execute("DROP TABLE IF EXISTS users")
+
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            secret TEXT DEFAULT ''
-        )
-    """)
+    CREATE TABLE users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        salt BLOB NOT NULL,
+        password_hash BLOB NOT NULL,
+        secret TEXT DEFAULT ''
+    )
+""")
+
     conn.commit()
     conn.close()
 
+#SAFE HASHING BEGINS
+#import os
+#ITERATIONS = 200_000
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+# def hash_password(username, password_plaintext):
+#     
+
+#     salt = salt_by_username(username)
+#     password_hash = hashlib.pbkdf2_hmac(
+#     'sha256',
+#     password_plaintext.encode('utf-8'),
+#     salt,
+#     ITERATIONS
+#     )
+#     return password_hash
+
+# def hash_password_generate_salted(password_plaintext) -> tuple[bytes, bytes]:
+#     salt = os.urandom(16)
+
+#     password_hash = hashlib.pbkdf2_hmac(
+#         'sha256',
+#         password_plaintext.encode('utf-8'),
+#         salt,
+#         ITERATIONS
+#     )
+
+#     return password_hash, salt
+
+
+#SAFE HASHING ENDS
+
+def hash_password_generate_salted(password_plaintext) -> tuple[bytes, bytes]:
+    return hashlib.sha256(password_plaintext.encode()).hexdigest(), b''
+
+def hash_password(username, password_plaintext):
+    return hashlib.sha256(password_plaintext.encode()).hexdigest()
+
+def salt_by_username(username: str) -> bytes:
+    conn = get_db()
+    try:
+        result = conn.execute(
+            "SELECT salt FROM users WHERE username=?",
+            (username)
+        ).fetchone()
+        return result
+    finally:
+        conn.close()
 
 
 @app.route("/", methods=["GET", "POST"])
 def login():
+    print("login!")
     if request.method == "POST":
         username = request.form["username"]
-        password = hash_password(request.form["password"])
+        print("username " + username)
+        hashed_password = hash_password(username, request.form["password"])
 
 #SQL Injection begins!
         conn = get_db()
-        vulnerablecode =  f"SELECT * FROM users WHERE username='{username}' AND password={password}"
+        vulnerablecode =  f"SELECT * FROM users WHERE username='{username}' AND password_hash='{hashed_password}'"
+        print(vulnerablecode)
         user = conn.execute(
             vulnerablecode
         ).fetchone()
@@ -51,8 +108,8 @@ def login():
 
         # conn = get_db()
         # user = conn.execute(
-        #     "SELECT * FROM users WHERE username=? AND password=?",
-        #     (username, password)
+        #     "SELECT * FROM users WHERE username=? AND hashed_password=?",
+        #     (username, hashed_password)
         # ).fetchone()
         # conn.close()
 
@@ -67,13 +124,14 @@ def login():
 def register():
     if request.method == "POST":
         username = request.form["username"]
-        password = hash_password(request.form["password"])
+        password_plaintext = request.form["password"]
+        password_hashed, salt = hash_password_generate_salted(request.form["password"])
 
         conn = get_db()
         try:
             conn.execute(
-                "INSERT INTO users (username, password) VALUES (?, ?)",
-                (username, password)
+                "INSERT INTO users (username, password_hash, salt) VALUES (?, ?, ?)",
+                (username, password_hashed, salt)
             )
             conn.commit()
         except sqlite3.IntegrityError:
