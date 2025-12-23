@@ -36,6 +36,23 @@ def init_db():
     )
 """)
 
+    cur.execute("""
+    CREATE TABLE login_audit (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        user_id INTEGER,
+        username TEXT NOT NULL,
+
+        success INTEGER NOT NULL,     -- 1 = success, 0 = failure
+        ip_address TEXT,
+        user_agent TEXT,
+
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+""")
+
     conn.commit()
     conn.close()
 
@@ -120,12 +137,34 @@ def login():
         # ).fetchone()
         # conn.close()
 
+
+
+        # Flaw 5 corrected by following code:
+        # user_id = user["id"] if user else None
+        # success = 1 if user else 0
+
+        # conn.execute(
+        #     """
+        #     INSERT INTO login_audit (user_id, username, success, ip_address, user_agent)
+        #     VALUES (?, ?, ?, ?, ?)
+        #     """,
+        #     (
+        #         user_id,
+        #         username,
+        #         success,
+        #         request.remote_addr,
+        #         request.headers.get("User-Agent")
+        #     )
+        # )
+
+
         if user:
             session["user_id"] = user["id"]
             session["role"] = user["role"]
             
             return redirect(url_for("profile"))
 
+    
     return render_template("login.html")
 
 
@@ -134,6 +173,9 @@ def register():
     if request.method == "POST":
         username = request.form["username"]
         password_plaintext = request.form["password"]
+        # Fix for flaw 4
+        # if test_password_strength(password_plaintext) == False:
+        #     return render_template("register.html")
         is_admin = "is_admin" in request.form
         role = 'admin' if is_admin else 'commoner'
         password_hashed, salt = hash_password_generate_salted(password_plaintext)
@@ -197,3 +239,30 @@ def admin():
     # if "user_id" not in session or not session.get("role") == 'admin':
     #     return render_template("forbidden.html")
     return render_template("admin.html")
+
+
+import re
+
+def test_password_strength(password_plaintext: str) -> bool:
+
+    if len(password_plaintext) < 12:
+        return False
+
+    if not re.search(r"[a-z]", password_plaintext):
+        return False
+
+    if not re.search(r"[A-Z]", password_plaintext):
+        return False
+
+    if not re.search(r"[0-9]", password_plaintext):
+        return False
+
+    special_chars = re.findall(
+        r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>/?]",
+        password_plaintext
+    )
+
+    if len(special_chars) < 3:
+        return False
+
+    return True
