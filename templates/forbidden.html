@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>403 Forbidden</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg,
+                #ff00cc,
+                #3333ff,
+                #00ffcc,
+                #ffcc00
+            );
+            background-size: 400% 400%;
+            animation: gradientShift 10s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card {
+            background: rgba(0, 0, 0, 0.75);
+            padding: 3rem 4rem;
+            border-radius: 16px;
+            text-align: center;
+            color: white;
+            box-shadow:
+                0 0 20px rgba(255, 0, 204, 0.6),
+                0 0 40px rgba(0, 255, 204, 0.4);
+            animation: pulse 2.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin: 0;
+            background: linear-gradient(90deg, #ff0080, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(255, 0, 200, 0.8);
+        }
+
+        p {
+            font-size: 1.2rem;
+            margin: 1rem 0 2rem;
+            color: #f0f0f0;
+        }
+
+        a {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #00ffff, #ff00cc);
+            color: black;
+            text-decoration: none;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 0 15px rgba(0,255,255,0.8);
+        }
+
+        a:hover {
+            transform: scale(1.1);
+            box-shadow:
+                0 0 25px rgba(255,0,204,1),
+                0 0 50px rgba(0,255,255,0.8);
+        }
+
+        .emoji {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            animation: shake 1.5s infinite;
+        }
+
+        @keyframes shake {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(2deg); }
+            50% { transform: rotate(-2deg); }
+            75% { transform: rotate(2deg); }
+            100% { transform: rotate(0deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="emoji">🚫🔥</div>
+            <h1>403</h1>
+            <p>
+                ACCESS DENIED<br>
+                <strong>Admin eyes only.</strong>
+            </p>
+            <a href="/">Take me back</a>
+        </div>
+    </div>
+</body>
+</html>

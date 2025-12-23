@@ -31,7 +31,8 @@ def init_db():
         username TEXT UNIQUE NOT NULL,
         salt BLOB NOT NULL,
         password_hash BLOB NOT NULL,
-        secret TEXT DEFAULT ''
+        secret TEXT DEFAULT '',
+        role TEXT DEFAULT 'commoner'
     )
 """)
 
@@ -121,6 +122,8 @@ def login():
 
         if user:
             session["user_id"] = user["id"]
+            session["role"] = user["role"]
+            
             return redirect(url_for("profile"))
 
     return render_template("login.html")
@@ -131,13 +134,15 @@ def register():
     if request.method == "POST":
         username = request.form["username"]
         password_plaintext = request.form["password"]
-        password_hashed, salt = hash_password_generate_salted(request.form["password"])
+        is_admin = "is_admin" in request.form
+        role = 'admin' if is_admin else 'commoner'
+        password_hashed, salt = hash_password_generate_salted(password_plaintext)
 
         conn = get_db()
         try:
             conn.execute(
-                "INSERT INTO users (username, password_hash, salt) VALUES (?, ?, ?)",
-                (username, password_hashed, salt)
+                "INSERT INTO users (username, password_hash, salt, role) VALUES (?, ?, ?, ?)",
+                (username, password_hashed, salt, role)
             )
             conn.commit()
         except sqlite3.IntegrityError:
@@ -183,3 +188,12 @@ def logout():
 if __name__ == "__main__":
     init_db()
     app.run(debug=True, use_reloader=False)
+
+@app.route("/admin")
+def admin():
+    print("admin requested!")
+    print (session.get("role"))
+    # This fixes flaw 3
+    # if "user_id" not in session or not session.get("role") == 'admin':
+    #     return render_template("forbidden.html")
+    return render_template("admin.html")
