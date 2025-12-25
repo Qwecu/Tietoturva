@@ -1,8 +1,3 @@
-# import debugpy
-# debugpy.listen(5678)
-# print("Waiting for debugger attach...")
-#debugpy.wait_for_client()  # optional; remove for normal runs
-
 from flask import Flask, render_template, request, redirect, session, url_for
 import sqlite3
 import hashlib
@@ -24,6 +19,7 @@ def init_db():
     conn = get_db()
     cur = conn.cursor()
     cur.execute("DROP TABLE IF EXISTS users")
+    cur.execute("DROP TABLE IF EXISTS login_audit")
 
     cur.execute("""
     CREATE TABLE users (
@@ -72,7 +68,7 @@ def init_db():
 #     )
 #     return password_hash.hex()
 
-# def hash_password_generate_salted(password_plaintext) -> tuple[bytes, bytes]:
+# def hash_password_generate_salted(password_plaintext) -> tuple[str, bytes]:
 #     salt = os.urandom(16)
 
 #     password_hash = hashlib.pbkdf2_hmac(
@@ -89,7 +85,7 @@ def init_db():
 
 #UNSAFE HASHING BEGINS
 
-def hash_password_generate_salted(password_plaintext) -> tuple[bytes, bytes]:
+def hash_password_generate_salted(password_plaintext) -> tuple[str, bytes]:
     return hashlib.sha256(password_plaintext.encode()).hexdigest(), b''
 
 def hash_password(username, password_plaintext):
@@ -139,10 +135,13 @@ def login():
 
 
 
-        # Flaw 5 corrected by following code:
+        #Flaw 5 corrected by following code:
         # user_id = user["id"] if user else None
         # success = 1 if user else 0
 
+        # print(f"Logged values {user_id}, {username}, {success}, {request.remote_addr}, {request.headers.get("User-Agent")}")
+
+        # conn = get_db()
         # conn.execute(
         #     """
         #     INSERT INTO login_audit (user_id, username, success, ip_address, user_agent)
@@ -157,6 +156,7 @@ def login():
         #     )
         # )
 
+        # conn.close()
 
         if user:
             session["user_id"] = user["id"]
@@ -175,7 +175,7 @@ def register():
         password_plaintext = request.form["password"]
         # Fix for flaw 4
         # if test_password_strength(password_plaintext) == False:
-        #     return render_template("register.html")
+        #     return "Bad bad password"
         is_admin = "is_admin" in request.form
         role = 'admin' if is_admin else 'commoner'
         password_hashed, salt = hash_password_generate_salted(password_plaintext)
@@ -227,15 +227,13 @@ def logout():
     return redirect(url_for("login"))
 
 
-if __name__ == "__main__":
-    init_db()
-    app.run(debug=True, use_reloader=False)
+
 
 @app.route("/admin")
 def admin():
     print("admin requested!")
     print (session.get("role"))
-    # This fixes flaw 3
+    #This fixes flaw 3
     # if "user_id" not in session or not session.get("role") == 'admin':
     #     return render_template("forbidden.html")
     return render_template("admin.html")
@@ -266,3 +264,7 @@ def test_password_strength(password_plaintext: str) -> bool:
         return False
 
     return True
+
+if __name__ == "__main__":
+    init_db()
+    app.run(debug=True, use_reloader=False)

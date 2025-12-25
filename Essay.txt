@@ -18,33 +18,39 @@ Note: These fixes are only tested to work one at a time. Before testing the next
 The project uses flaws from the OWASP 2021 list.
 
 FLAW 1:
-https://github.com/Qwecu/Tietoturva/blob/8c553d077b8bd299065770decf4a6e4ecee943df/app.py#L122
+https://github.com/Qwecu/Tietoturva/blob/8c553d077b8bd299065770decf4a6e4ecee943df/app.py#L118
 
 The first flaw is A03 (SQL) injection. In the server code, the username and password hash are concatenated without parametrization and the text from the user textbox is directly sent to the database. This makes SQL injection possible and the user can e.g. login with any selected username, bypassing the password completely, by writing
 
-username' OR 1=1 --
+username' AND 1=1 --
 
 in the username textbox.
 
-The fix is included in the code: comment out the block starting "Injection begins!" and ending "injection ends! Corrected code follows:".... and uncomment the six lines of code after that, starting at https://github.com/Qwecu/Tietoturva/blob/8c553d077b8bd299065770decf4a6e4ecee943df/app.py#L133
+The fix is included in the code: comment out the block starting "Injection begins!" and ending "injection ends! Corrected code follows:".... and uncomment the six lines of code after that, starting at https://github.com/Qwecu/Tietoturva/blob/8c553d077b8bd299065770decf4a6e4ecee943df/app.py#L129
+
+The "before" screenshot demonstrates a way to exploit this. After the fix, the login just fails and the user is redirected to login, as in the "after" screenshot.
 
 FLAW 2:
-https://github.com/Qwecu/Tietoturva/blob/8c553d077b8bd299065770decf4a6e4ecee943df/app.py#L90
+https://github.com/Qwecu/Tietoturva/blob/8c553d077b8bd299065770decf4a6e4ecee943df/app.py#L86
 
 The second flaw is A02 Cryptographic failures. In the original code, passwords are stored unsalted, hashed with a single SHA256 iteration. SHA256 is a very fast algorithm, making it possible to try different passwords fast in succession. If the attacker gets access to the database, the unsalted hashes make it possible to use rainbow attacks and recognize same hashes attached to usernames in different systems. A rainbow table means a list of pre-calculated plaintext passwords and their hashes. Because hashes are deterministically calculated, if an attacker finds a same hash in the database and the rainbow table, they immediately know what the password is. This is prevented by salting: a random value (but persistent for every user) is concatenated with the password before hashing. This way, the same password does not produce the same password anymore on different sites, bacause the salt is different.
 
 In the fixed version, a salt is used and SHA256 is iterated 200 000 times, making it more expensive time-wise to calculate.
 
-The fix is provided at https://github.com/Qwecu/Tietoturva/blob/8c553d077b8bd299065770decf4a6e4ecee943df/app.py#L59. Comment out the code between "UNSAFE HASHING BEGINS" and "UNSAFE HASHING ENDS".
+The fix is provided at https://github.com/Qwecu/Tietoturva/blob/8c553d077b8bd299065770decf4a6e4ecee943df/app.py#L55. Comment out the code between "UNSAFE HASHING BEGINS" and "UNSAFE HASHING ENDS".
+
+The pictures demonstrate how the time needed for registering increases.
 
 FLAW 3:
-https://github.com/Qwecu/Tietoturva/blob/8c553d077b8bd299065770decf4a6e4ecee943df/app.py#L238
+https://github.com/Qwecu/Tietoturva/blob/8c553d077b8bd299065770decf4a6e4ecee943df/app.py#L236
 
 The third flaw is A01 Broken access control. The program has a supposedly secret admin page, only protected by that there is no direct link there. But using the route /admin anyone can access the page. During login, the role of the user is stored in the session. In the fixed version, the session variable "role" is checked, and non-admin users are directed to a 403 forbidden page. Users are not able to tamper with variables in the session: the role can be read but it is protecter by a key, so the server notices if the user tries to change their role.
 
 This flaw is corrected by uncommenting the block provided in the link. The two lines of code add a check whether the user has admin rights and redirects to a "403 forbidden" page if no admin rights are found. The session state is cleared when logging out, so admin rights are removed when admin logs out.
 
 For testing purposes, the user can specify teir admin status with the "admin" checkbog during registration. This is of course a very unsafe practice in real life :))
+
+Pictures demonstrate what going to /admin shows to the non-admin user before & after fix
 
 FLAW 4:
 https://github.com/Qwecu/Tietoturva/blob/8c553d077b8bd299065770decf4a6e4ecee943df/app.py#L176
@@ -56,12 +62,14 @@ The check could be further improved by checking against "known weak password" li
 This problem is fixed by uncommenting the code in the link, enabling the regex function call.
 
 FLAW 5:
-https://github.com/Qwecu/Tietoturva/blob/8c553d077b8bd299065770decf4a6e4ecee943df/app.py#L142
+https://github.com/Qwecu/Tietoturva/blob/8c553d077b8bd299065770decf4a6e4ecee943df/app.py#L138
 The problem is the lack of code linked above, uncommenting the block fixes the issue.
 
 Flaw 5 is A09 Security Logging and Monitoring Failures. The logins and failed logins are not logged. This makes The fix is commented out and now the logins are logged in an audit table! Yippee! The problem with no logging is that breaches are more difficult to detect. The fix logs both successful and unsuccessful logins. For successful logins, the stored values are username, userid, ip address, success status and user agent (this is provided by client and is not trustworthy, but saved anyways). For unsuccessful logins, the username is still saved but there is no user id to save, otherwise the fields are the same.
 
 In this case, the logs are still stored locally for the purpose of keeping the scope of the program small. In a publicly used project, the logs should be stored on another computer.
+
+The "before" picture tries to demonstrate lack of logging by showing the empty space between two lines. The "after" picture shows logging of logging in the terminal...
 
 Some links that I used:
 https://crypto.stackexchange.com/questions/56238/why-sha-256-or-any-other-is-too-fast-for-passwords-but-slow-for-collisions-t
