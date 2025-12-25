@@ -1,6 +1,8 @@
 LINK: link to the repository
 installation instructions if needed
 
+Note: These fixes are only tested to work one at a time. Before testing the next fix, revert the previous one back to unfixed.
+
 FLAW 1:
 exact source link pinpointing flaw 1...
 
@@ -11,7 +13,7 @@ The fix is included in the code: comment out the block starting "Injection begin
 FLAW 2:
 exact source link pinpointing flaw 2...
 
-The second flaw is A02 Cryptographic failures. In the original code, passwords are stored unsaltes, hashed with a single SHA256 iteration. SHA256 is a very fast algorithm, making it possible to try different passwords fast in succession. If the attacker gets access to the database, the unsalted hashes make it possible to use rainbow attacks and recognize same hashes attached to usernames in different systems. In the fixed version, a salt is used and SHA256 is iterated 200 000 times, making it more expensive time-wise to calculate.
+The second flaw is A02 Cryptographic failures. In the original code, passwords are stored unsalted, hashed with a single SHA256 iteration. SHA256 is a very fast algorithm, making it possible to try different passwords fast in succession. If the attacker gets access to the database, the unsalted hashes make it possible to use rainbow attacks and recognize same hashes attached to usernames in different systems. In the fixed version, a salt is used and SHA256 is iterated 200 000 times, making it more expensive time-wise to calculate.
 how to fix it...
 
 ...
